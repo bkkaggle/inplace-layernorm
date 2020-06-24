@@ -8,35 +8,18 @@ import torch.nn.functional as F
 
 from torchvision import datasets, transforms
 
+from models import BnModel, CustomBnModel
 
-class BnModel(nn.Module):
-    def __init__(self):
-        super(BnModel, self).__init__()
-        self.conv1 = nn.Conv2d(1, 32, 3, 1)
-        self.conv2 = nn.Conv2d(32, 64, 3, 1)
-        self.dropout1 = nn.Dropout2d(0.25)
-        self.dropout2 = nn.Dropout2d(0.5)
-        self.fc1 = nn.Linear(9216, 128)
-        self.fc2 = nn.Linear(128, 10)
-
-    def forward(self, x):
-        x = self.conv1(x)
-        x = F.relu(x)
-        x = self.conv2(x)
-        x = F.relu(x)
-        x = F.max_pool2d(x, 2)
-        x = self.dropout1(x)
-        x = torch.flatten(x, 1)
-        x = self.fc1(x)
-        x = F.relu(x)
-        x = self.dropout2(x)
-        x = self.fc2(x)
-        output = F.log_softmax(x, dim=1)
-        return output
+nametomodel = {
+    "bn": BnModel,
+    "customBN": CustomBnModel
+}
 
 
 def main():
     parser = argparse.ArgumentParser()
+
+    parser.add_argument('--model_type', type=str)
 
     parser.add_argument('--fast', default=False, action="store_true")
     parser.add_argument('--debug', default=False, action="store_true")
@@ -53,7 +36,9 @@ def main():
     device = torch.device(
         "cuda:0" if torch.cuda.is_available() else "cpu")
 
-    model = BnModel().to(device)
+    model = nametomodel[args.model_type]
+
+    model = model().to(device)
 
     train_dataloader = torch.utils.data.DataLoader(
         datasets.MNIST('./data', train=True, download=True,
@@ -70,9 +55,9 @@ def main():
         ])),
         batch_size=64, shuffle=True)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-2)
 
-    for epoch in range(0, 10):
+    for epoch in range(0, 2):
         train_loss = 0
         val_loss = 0
 
@@ -113,7 +98,7 @@ def main():
         val_loss /= (j + 1)
 
         print(
-            f"loss: {train_loss}, val_loss: {val_loss}, val_acc: {correct / (j + 1)}")
+            f"loss: {train_loss}, val_loss: {val_loss}, val_acc: {correct / len(test_dataloader.dataset)}")
 
 
 if __name__ == "__main__":
