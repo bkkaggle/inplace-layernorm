@@ -1,12 +1,14 @@
 # Notes
 
 -   make custom bn and compare speed
-    -   try jit
+-   make `autograd.function` version of bn and relu
+-   combine to make activated batchnorm
+-   make checkpointing version
+-   check memory usage
 
 # Benchmarks
 
-| impl   | speed |
-| ------ | ----- |
-| pt     |       |
-| custom |       |
-| jit    |       |
+| impl   | speed  |
+| ------ | ------ |
+| pt     | 88it/s |
+| custom | 78it/s |

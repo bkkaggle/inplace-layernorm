@@ -8,18 +8,14 @@ import torch.nn.functional as F
 
 from torchvision import datasets, transforms
 
-from models import BnModel, CustomBnModel
-
-nametomodel = {
-    "bn": BnModel,
-    "customBN": CustomBnModel
-}
+from models import Net
 
 
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--model_type', type=str)
+    parser.add_argument('--abn_type', type=str)
+    parser.add_argument('--jit_script', default=False, action="store_true")
 
     parser.add_argument('--fast', default=False, action="store_true")
     parser.add_argument('--debug', default=False, action="store_true")
@@ -36,9 +32,7 @@ def main():
     device = torch.device(
         "cuda:0" if torch.cuda.is_available() else "cpu")
 
-    model = nametomodel[args.model_type]
-
-    model = model().to(device)
+    model = Net(args.abn_type).to(device)
 
     train_dataloader = torch.utils.data.DataLoader(
         datasets.MNIST('./data', train=True, download=True,
