@@ -14,6 +14,7 @@ from models import Net
 def main():
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--abn_type', type=str)
     parser.add_argument('--jit_script', default=False, action="store_true")
 
@@ -40,14 +41,14 @@ def main():
                            transforms.ToTensor(),
                            transforms.Normalize((0.1307,), (0.3081,))
                        ])),
-        batch_size=64, shuffle=True)
+        batch_size=args.batch_size, shuffle=True)
 
     test_dataloader = torch.utils.data.DataLoader(
         datasets.MNIST('./data', train=False, transform=transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize((0.1307,), (0.3081,))
         ])),
-        batch_size=64, shuffle=True)
+        batch_size=args.batch_size, shuffle=True)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-2)
 
