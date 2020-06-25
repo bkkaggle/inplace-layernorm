@@ -136,13 +136,13 @@ class BatchNormAutograd(nn.Module):
         if not torch.is_grad_enabled():
             out = (x - self.moving_mean) / torch.sqrt(self.moving_var + 1e-5)
             out = self.gamma * out + self.beta
+
         else:
             mean = x.mean(dim=(0, 2, 3), keepdim=True)
             var = ((x - mean) ** 2).mean(dim=(0, 2, 3), keepdim=True)
 
-            self.moving_mean = 0.9 * self.moving_mean * (1 - 0.9) * mean
-
-            self.moving_var = 0.9 * self.moving_var * (1 - 0.9) * var
+            self.moving_mean = 0.9 * self.moving_mean + (1 - 0.9) * mean
+            self.moving_var = 0.9 * self.moving_var + (1 - 0.9) * var
 
             out = BatchNormFN.apply(x, self.gamma, self.beta)
 
