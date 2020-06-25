@@ -55,6 +55,7 @@ class BatchNorm(nn.Module):
         return Y
 
 
+# from https://kratzert.github.io/2016/02/12/understanding-the-gradient-flow-through-the-batch-normalization-layer.html
 class BatchNormFN(torch.autograd.Function):
 
     @staticmethod
