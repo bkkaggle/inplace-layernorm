@@ -104,6 +104,9 @@ def main():
 
         model.train()
         for i, (data, target) in tqdm(enumerate(train_dataloader), total=len(train_dataloader)):
+            if i < 10:
+                memusage()
+
             data, target = data.to(device), target.to(device)
 
             optimizer.zero_grad()
@@ -111,11 +114,15 @@ def main():
             output = model(data)
             loss = F.nll_loss(output, target)
             loss.backward()
+
+            if i < 10:
+                memusage()
+
             optimizer.step()
 
             train_loss += loss.item()
 
-            if i == 10:
+            if i < 10:
                 memusage()
 
             if args.fast and i > 10:
