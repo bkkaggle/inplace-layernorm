@@ -8,12 +8,9 @@ import torch.nn.functional as F
 
 from torchvision import datasets, transforms
 
-from pytorch_memlab import profile
-
 from models import Net
 
 
-@profile
 def main():
     parser = argparse.ArgumentParser()
 

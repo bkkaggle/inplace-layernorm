@@ -8,8 +8,8 @@
 
 # Benchmarks
 
-| impl              | speed  |
-| ----------------- | ------ |
-| pt                | 88it/s |
-| custom            | 78it/s |
+| impl              | speed  | memory |
+| ----------------- | ------ | ------ |
+| pt                | 88it/s | 42mb   |
+| custom            | 78it/s | 44mb   |
 | autograd.function | 70it/s |
