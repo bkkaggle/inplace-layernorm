@@ -13,6 +13,7 @@ from pytorch_memlab import profile
 from models import Net
 
 
+@profile
 def main():
     parser = argparse.ArgumentParser()
 
