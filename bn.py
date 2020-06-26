@@ -65,8 +65,6 @@ def main():
 
         model.train()
         for i, (data, target) in tqdm(enumerate(train_dataloader), total=len(train_dataloader)):
-            memusage()
-
             data, target = data.to(device), target.to(device)
 
             optimizer.zero_grad()
@@ -74,14 +72,9 @@ def main():
             output = model(data)
             loss = F.nll_loss(output, target)
             loss.backward()
-
-            memusage()
-
             optimizer.step()
 
             train_loss += loss.item()
-
-            memusage()
 
             if args.fast and i > 10:
                 break
@@ -91,7 +84,6 @@ def main():
         model.eval()
         with torch.no_grad():
             for j, (data, target) in tqdm(enumerate(test_dataloader), total=len(test_dataloader)):
-                memusage()
                 data, target = data.to(device), target.to(device)
 
                 output = model(data)
