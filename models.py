@@ -169,7 +169,7 @@ class MyReLU(torch.autograd.Function):
 
 
 class ReLUAutograd(nn.Module):
-    def __init__(self, num_features):
+    def __init__(self):
         super(ReLUAutograd, self).__init__()
 
     def forward(self, x):
@@ -203,7 +203,7 @@ class Block(torch.nn.Module):
         elif abn_type == 'autogradRelu':
             self.abn = nn.Sequential(
                 nn.BatchNorm2d(out_ch),
-
+                ReLUAutograd()
             )
 
         self.pool = nn.MaxPool2d((2, 2), 2)

@@ -9,7 +9,6 @@
 
 # Todo
 
--   make `autograd.function` relu
 -   combine to make activated batchnorm
 -   make checkpointing version
 -   make inplace abn
@@ -21,3 +20,4 @@
 
 -   make custom bn and compare speed
 -   check memory usage
+-   make `autograd.function` relu
