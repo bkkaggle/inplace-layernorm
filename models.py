@@ -152,6 +152,31 @@ class BatchNormAutograd(nn.Module):
         return out
 
 
+# from https://pytorch.org/tutorials/beginner/examples_autograd/two_layer_net_custom_function.html
+class MyReLU(torch.autograd.Function):
+
+    @staticmethod
+    def forward(ctx, input):
+        ctx.save_for_backward(input)
+        return input.clamp(min=0)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        input, = ctx.saved_tensors
+        grad_input = grad_output.clone()
+        grad_input[input < 0] = 0
+        return grad_input
+
+
+class ReLUAutograd(nn.Module):
+    def __init__(self, num_features):
+        super(ReLUAutograd, self).__init__()
+
+    def forward(self, x):
+        x = MyReLU.apply(x)
+        return x
+
+
 class Block(torch.nn.Module):
     def __init__(self, in_ch, out_ch, abn_type):
         super().__init__()
@@ -163,16 +188,22 @@ class Block(torch.nn.Module):
                 nn.BatchNorm2d(out_ch),
                 nn.ReLU()
             )
-        if abn_type == 'custom':
+        elif abn_type == 'custom':
             self.abn = nn.Sequential(
                 BatchNorm(out_ch),
                 nn.ReLU()
             )
 
-        if abn_type == 'autograd':
+        elif abn_type == 'autograd':
             self.abn = nn.Sequential(
                 BatchNormAutograd(out_ch),
                 nn.ReLU()
+            )
+
+        elif abn_type == 'autogradRelu':
+            self.abn = nn.Sequential(
+                nn.BatchNorm2d(out_ch),
+
             )
 
         self.pool = nn.MaxPool2d((2, 2), 2)
