@@ -16,9 +16,10 @@ from models import Net
 def main():
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('--epochs', type=int, default=2)
     parser.add_argument('--batch_size', type=int, default=64)
+
     parser.add_argument('--abn_type', type=str)
-    parser.add_argument('--jit_script', default=False, action="store_true")
 
     parser.add_argument('--fast', default=False, action="store_true")
     parser.add_argument('--debug', default=False, action="store_true")
@@ -57,7 +58,7 @@ def main():
 
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-2)
 
-    for epoch in range(0, 2):
+    for epoch in range(0, args.epochs):
         train_loss = 0
         val_loss = 0
 
