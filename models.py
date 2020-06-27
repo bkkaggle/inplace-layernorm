@@ -277,6 +277,127 @@ class ActivatedBatchNormAutograd(nn.Module):
         return out
 
 
+class CheckpointABNFN(torch.autograd.Function):
+
+    @staticmethod
+    def forward(ctx, x, gamma, beta):
+
+        mu = x.mean(dim=(0, 2, 3), keepdim=True)
+
+        xmu = x - mu
+        sq = xmu ** 2
+
+        var = sq.mean(dim=(0, 2, 3), keepdim=True)
+
+        sqrtvar = torch.sqrt(var + 1e-5)
+
+        ivar = 1.0 / sqrtvar
+
+        xhat = xmu * ivar
+
+        gammax = gamma * xhat
+
+        bn_out = gammax + beta
+
+        out = bn_out.clamp(min=0)
+
+        # ctx.save_for_backward(xhat, gamma, xmu, ivar, sqrtvar, var, bn_out)
+        ctx.save_for_backward(x, gamma, beta)
+
+        return out
+
+    @staticmethod
+    def backward(ctx, dout):
+        # xhat, gamma, xmu, ivar, sqrtvar, var, bn_out = ctx.saved_tensors
+        x, gamma, beta = ctx.saved_tensors
+
+        # recompute
+        mu = x.mean(dim=(0, 2, 3), keepdim=True)
+
+        xmu = x - mu
+        sq = xmu ** 2
+
+        var = sq.mean(dim=(0, 2, 3), keepdim=True)
+
+        sqrtvar = torch.sqrt(var + 1e-5)
+
+        ivar = 1.0 / sqrtvar
+
+        xhat = xmu * ivar
+
+        gammax = gamma * xhat
+
+        bn_out = gammax + beta
+
+        # backwards pass
+
+        dx = dgamma = dbeta = None
+
+        dout = dout * (bn_out > 0)
+
+        dbeta = dout.sum(dim=(0, 2, 3), keepdim=True)
+
+        dgammax = dout
+
+        dgamma = torch.sum(dgammax * xhat, dim=(0, 2, 3), keepdim=True)
+        dxhat = dgammax * gamma
+
+        divar = torch.sum(dxhat * xmu, dim=(0, 2, 3), keepdim=True)
+        dxmu1 = dxhat * ivar
+
+        dsqrtvar = -1.0 / (sqrtvar ** 2) * divar
+
+        dvar = 0.5 * 1.0 / torch.sqrt(var + 1e-5) * dsqrtvar
+
+        dsq = 1.0 / (dout.shape[0] * dout.shape[2] *
+                     dout.shape[3]) * torch.ones_like(dout) * dvar
+
+        dxmu2 = 2.0 * xmu * dsq
+
+        dx1 = dxmu1 + dxmu2
+        dmu = -1.0 * torch.sum(dxmu1 + dxmu2, dim=(0, 2, 3), keepdim=True)
+
+        dx2 = 1.0 / (dout.shape[0] * dout.shape[2] *
+                     dout.shape[3]) * torch.ones_like(dout) * dmu
+
+        dx = dx1 + dx2
+
+        return dx, dgamma, dbeta
+
+
+class CheckpointABN(nn.Module):
+    def __init__(self, num_features):
+        super(CheckpointABN, self).__init__()
+
+        shape = (1, num_features, 1, 1)
+
+        self.gamma = nn.Parameter(torch.ones(shape))
+        self.beta = nn.Parameter(torch.zeros(shape))
+
+        device = torch.device(
+            "cuda:0" if torch.cuda.is_available() else "cpu")
+
+        self.moving_mean = torch.zeros(shape, device=device)
+        self.moving_var = torch.zeros(shape, device=device)
+
+    def forward(self, x):
+        if not torch.is_grad_enabled():
+            out = (x - self.moving_mean) / torch.sqrt(self.moving_var + 1e-5)
+            out = self.gamma * out + self.beta
+        else:
+
+            out = ActivatedBatchNorm.apply(x, self.gamma, self.beta)
+
+            with torch.no_grad():
+                mean = x.mean(dim=(0, 2, 3), keepdim=True)
+                var = ((x - mean) ** 2).mean(dim=(0, 2, 3), keepdim=True)
+
+                self.moving_mean = 0.9 * self.moving_mean + (1 - 0.9) * mean
+                self.moving_var = 0.9 * self.moving_var + (1 - 0.9) * var
+
+        return out
+
+
 class Block(torch.nn.Module):
     def __init__(self, in_ch, out_ch, abn_type):
         super().__init__()
@@ -308,6 +429,9 @@ class Block(torch.nn.Module):
 
         elif abn_type == 'abn':
             self.abn = ActivatedBatchNormAutograd(out_ch)
+
+        elif abn_type == 'checkpoint':
+            self.abn = CheckpointABN(out_ch)
 
         self.pool = nn.MaxPool2d((2, 2), 2)
 
