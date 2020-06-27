@@ -551,41 +551,20 @@ class Block(torch.nn.Module):
         elif abn_type == 'abn':
             self.abn = ActivatedBatchNormAutograd(out_ch)
 
-        # elif abn_type == 'checkpoint':
-        #     self.abn = CheckpointABN(out_ch)
-
-        # elif abn_type == 'checkpointBN':
-        #     self.abn = CheckpointBN(out_ch)
-
         elif abn_type == 'checkpoint':
-            self.abn = nn.Sequential(
-                nn.BatchNorm2d(out_ch),
-                nn.ReLU()
-            )
+            self.abn = CheckpointABN(out_ch)
+
+        elif abn_type == 'checkpointBN':
+            self.abn = CheckpointBN(out_ch)
 
         self.pool = nn.MaxPool2d((2, 2), 2)
 
     def forward(self, x):
         x = self.conv(x)
 
-        if self.abn_type == 'checkpoint':
-            x = torch.utils.checkpoint.checkpoint(self.abn, x)
-        else:
-            x = self.abn(x)
+        x = self.abn(x)
 
         x = self.pool(x)
-
-        return x
-
-
-class Temp(torch.nn.Module):
-    def __init__(self, in_ch):
-        super().__init__()
-
-        self.mod = nn.BatchNorm2d(in_ch)
-
-    def forward(self, x):
-        x = torch.utils.checkpoint.checkpoint(self.mod, x)
 
         return x
 
