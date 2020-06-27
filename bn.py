@@ -90,6 +90,8 @@ def main():
             optimizer.zero_grad()
 
             output = model(data)
+            output = F.log_softmax(output, dim=1)
+
             loss = F.nll_loss(output, target)
             loss.backward()
             optimizer.step()
@@ -107,6 +109,8 @@ def main():
                 data, target = data.to(device), target.to(device)
 
                 output = model(data)
+                output = F.log_softmax(output, dim=1)
+
                 loss = F.nll_loss(output, target, reduction='sum').item()
 
                 pred = output.argmax(dim=1, keepdim=True)
