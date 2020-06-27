@@ -43,16 +43,18 @@ def main():
 
     if args.resnet:
 
-        if args.abn_type == 'pt':
-            abn = nn.BatchNorm2d
-        elif args.abn_type == 'custom':
-            abn = BatchNorm
+        # if args.abn_type == 'pt':
+        #     abn = nn.BatchNorm2d
+        # elif args.abn_type == 'custom':
+        #     abn = BatchNorm
 
-        elif args.abn_type == 'autograd':
-            abn = BatchNormAutograd
+        # elif args.abn_type == 'autograd':
+        #     abn = BatchNormAutograd
 
-        elif args.abn_type == 'checkpoint':
-            abn = CheckpointBN
+        # elif args.abn_type == 'checkpoint':
+        #     abn = CheckpointBN
+
+        abn = Temp
 
         model = ResNet(BasicBlock, [2, 2, 2, 2],
                        num_classes=10, norm_layer=abn).to(device)

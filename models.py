@@ -578,6 +578,18 @@ class Block(torch.nn.Module):
         return x
 
 
+class Temp(torch.nn.Module):
+    def __init__(self, in_ch):
+        super().__init__()
+
+        self.mod = nn.BatchNorm2d(in_ch)
+
+    def forward(self, x):
+        x = torch.utils.checkpoint.checkpoint(self.mod, x)
+
+        return x
+
+
 class Net(torch.nn.Module):
     def __init__(self, abn_type):
         super().__init__()
