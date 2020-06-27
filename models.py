@@ -388,7 +388,7 @@ class CheckpointABN(nn.Module):
             out = out.clamp(min=0)
         else:
 
-            out = ActivatedBatchNorm.apply(x, self.gamma, self.beta)
+            out = CheckpointABNFN.apply(x, self.gamma, self.beta)
 
             with torch.no_grad():
                 mean = x.mean(dim=(0, 2, 3), keepdim=True)
