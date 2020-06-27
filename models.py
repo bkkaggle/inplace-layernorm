@@ -212,8 +212,7 @@ class ActivatedBatchNorm(torch.autograd.Function):
 
         dx = dgamma = dbeta = None
 
-        # dout = dout.clone()
-        dout[bn_out < 0] = 0
+        dout = dout * bn_out.clamp(min=0)
 
         dbeta = dout.sum(dim=(0, 2, 3), keepdim=True)
 
