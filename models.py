@@ -263,6 +263,7 @@ class ActivatedBatchNormAutograd(nn.Module):
         if not torch.is_grad_enabled():
             out = (x - self.moving_mean) / torch.sqrt(self.moving_var + 1e-5)
             out = self.gamma * out + self.beta
+            out = out.clamp(min=0)
         else:
 
             out = ActivatedBatchNorm.apply(x, self.gamma, self.beta)
@@ -384,6 +385,7 @@ class CheckpointABN(nn.Module):
         if not torch.is_grad_enabled():
             out = (x - self.moving_mean) / torch.sqrt(self.moving_var + 1e-5)
             out = self.gamma * out + self.beta
+            out = out.clamp(min=0)
         else:
 
             out = ActivatedBatchNorm.apply(x, self.gamma, self.beta)
