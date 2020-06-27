@@ -521,6 +521,8 @@ class Block(torch.nn.Module):
     def __init__(self, in_ch, out_ch, abn_type):
         super().__init__()
 
+        self.abn_type = abn_type
+
         self.conv = nn.Conv2d(in_ch, out_ch, kernel_size=3)
 
         if abn_type == 'pt':
@@ -549,18 +551,27 @@ class Block(torch.nn.Module):
         elif abn_type == 'abn':
             self.abn = ActivatedBatchNormAutograd(out_ch)
 
-        elif abn_type == 'checkpoint':
-            self.abn = CheckpointABN(out_ch)
+        # elif abn_type == 'checkpoint':
+        #     self.abn = CheckpointABN(out_ch)
 
-        elif abn_type == 'checkpointBN':
-            self.abn = CheckpointBN(out_ch)
+        # elif abn_type == 'checkpointBN':
+        #     self.abn = CheckpointBN(out_ch)
+
+        elif abn_type == 'checkpoint':
+            self.abn = nn.Sequential(
+                nn.BatchNorm2d(out_ch),
+                nn.ReLU()
+            )
 
         self.pool = nn.MaxPool2d((2, 2), 2)
 
     def forward(self, x):
         x = self.conv(x)
 
-        x = self.abn(x)
+        if self.abn_type == 'checkpoint':
+            x = torch.utils.checkpoint.checkpoint(self.abn, x)
+        else:
+            x = self.abn(x)
 
         x = self.pool(x)
 
@@ -585,6 +596,5 @@ class Net(torch.nn.Module):
         x = x.view(x.shape[0], -1)
 
         x = self.linear(x)
-        x = F.log_softmax(x, dim=1)
 
         return x

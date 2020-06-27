@@ -17,6 +17,7 @@ from models import *
 def main():
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('--resnet', default=False, action="store_true")
     parser.add_argument('--epochs', type=int, default=2)
     parser.add_argument('--batch_size', type=int, default=64)
 
@@ -40,21 +41,24 @@ def main():
     device = torch.device(
         "cuda:0" if torch.cuda.is_available() else "cpu")
 
-    # model = Net(args.abn_type).to(device)
+    if args.resnet:
 
-    if args.abn_type == 'pt':
-        abn = nn.BatchNorm2d
-    elif args.abn_type == 'custom':
-        abn = BatchNorm
+        if args.abn_type == 'pt':
+            abn = nn.BatchNorm2d
+        elif args.abn_type == 'custom':
+            abn = BatchNorm
 
-    elif args.abn_type == 'autograd':
-        abn = BatchNormAutograd
+        elif args.abn_type == 'autograd':
+            abn = BatchNormAutograd
 
-    elif args.abn_type == 'checkpoint':
-        abn = CheckpointBN
+        elif args.abn_type == 'checkpoint':
+            abn = CheckpointBN
 
-    model = ResNet(BasicBlock, [2, 2, 2, 2],
-                   num_classes=10, norm_layer=abn).to(device)
+        model = ResNet(BasicBlock, [2, 2, 2, 2],
+                       num_classes=10, norm_layer=abn).to(device)
+
+    else:
+        model = Net(args.abn_type).to(device)
 
     train_dataloader = torch.utils.data.DataLoader(
         datasets.MNIST('./data', train=True, download=True,
