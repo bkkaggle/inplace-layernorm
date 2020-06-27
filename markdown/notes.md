@@ -21,3 +21,4 @@
 -   check memory usage
 -   make `autograd.function` relu
 -   combine to make activated batchnorm
+-   prob can make autograd.fn bn more efficient by removing something from the cache

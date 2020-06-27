@@ -164,7 +164,7 @@ class MyReLU(torch.autograd.Function):
     def backward(ctx, grad_output):
         input, = ctx.saved_tensors
 
-        grad_input = grad_output * input.clamp(min=0)
+        grad_input = grad_output * (input > 0)
 
         return grad_input
 
@@ -212,7 +212,7 @@ class ActivatedBatchNorm(torch.autograd.Function):
 
         dx = dgamma = dbeta = None
 
-        dout = dout * bn_out.clamp(min=0)
+        dout = dout * (bn_out > 0)
 
         dbeta = dout.sum(dim=(0, 2, 3), keepdim=True)
 
