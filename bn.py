@@ -7,10 +7,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from torchvision import datasets, transforms
+from torchvision.models.resnet import ResNet, BasicBlock
 
 import wandb
 
-from models import Net
+from models import *
 
 
 def main():
@@ -39,20 +40,38 @@ def main():
     device = torch.device(
         "cuda:0" if torch.cuda.is_available() else "cpu")
 
-    model = Net(args.abn_type).to(device)
+    # model = Net(args.abn_type).to(device)
+
+    if args.abn_type == 'pt':
+        abn = nn.BatchNorm2d
+    elif args.abn_type == 'custom':
+        abn = BatchNorm
+
+    elif args.abn_type == 'autograd':
+        abn = BatchNormAutograd
+
+    elif args.abn_type == 'checkpoint':
+        abn = CheckpointBN
+
+    model = ResNet(BasicBlock, [2, 2, 2, 2],
+                   num_classes=10, norm_layer=abn).to(device)
 
     train_dataloader = torch.utils.data.DataLoader(
         datasets.MNIST('./data', train=True, download=True,
                        transform=transforms.Compose([
                            transforms.ToTensor(),
-                           transforms.Normalize((0.1307,), (0.3081,))
+                           transforms.Normalize((0.1307,), (0.3081,)),
+                           transforms.Lambda(
+                               lambda x: torch.cat([x, x, x], dim=0))
                        ])),
         batch_size=args.batch_size, shuffle=True)
 
     test_dataloader = torch.utils.data.DataLoader(
         datasets.MNIST('./data', train=False, transform=transforms.Compose([
             transforms.ToTensor(),
-            transforms.Normalize((0.1307,), (0.3081,))
+            transforms.Normalize((0.1307,), (0.3081,)),
+            transforms.Lambda(
+                lambda x: torch.cat([x, x, x], dim=0))
         ])),
         batch_size=args.batch_size, shuffle=True)
 
