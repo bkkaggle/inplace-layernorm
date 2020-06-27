@@ -10,6 +10,7 @@
 # Todo
 
 -   make checkpointing version
+    -   checkpointing version isn't saving any memory
 -   make inplace abn
 
 -   invertible autograd.function GeLU

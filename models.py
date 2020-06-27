@@ -78,13 +78,14 @@ class BatchNormFN(torch.autograd.Function):
 
         out = gammax + beta
 
-        ctx.save_for_backward(xhat, gamma, xmu, ivar, sqrtvar, var)
+        # ctx.save_for_backward(xhat, gamma, xmu, ivar, sqrtvar, var)
+        ctx.save_for_backward(xhat, gamma, xmu, ivar, sqrtvar, var, x, beta)
 
         return out
 
     @staticmethod
     def backward(ctx, dout):
-        xhat, gamma, xmu, ivar, sqrtvar, var = ctx.saved_tensors
+        xhat, gamma, xmu, ivar, sqrtvar, var, x, beta = ctx.saved_tensors
 
         dx = dgamma = dbeta = None
 
