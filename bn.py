@@ -41,27 +41,14 @@ def main():
     device = torch.device(
         "cuda:0" if torch.cuda.is_available() else "cpu")
 
-    if args.resnet:
+    if args.abn_type == 'pt':
+        abn = nn.BatchNorm2d
 
-        if args.abn_type == 'pt':
-            abn = nn.BatchNorm2d
-        elif args.abn_type == 'custom':
-            abn = BatchNorm
+    elif args.abn_type == 'autograd':
+        abn = BatchNormAutograd
 
-        elif args.abn_type == 'autograd':
-            abn = BatchNormAutograd
-
-        elif args.abn_type == 'autograd2':
-            abn = BatchNormAutograd2
-
-        elif args.abn_type == 'checkpoint':
-            abn = CheckpointBN
-
-        model = ResNet(BasicBlock, [2, 2, 2, 2],
-                       num_classes=10, norm_layer=abn).to(device)
-
-    else:
-        model = Net(args.abn_type).to(device)
+    model = ResNet(BasicBlock, [2, 2, 2, 2],
+                   num_classes=10, norm_layer=abn).to(device)
 
     train_dataloader = torch.utils.data.DataLoader(
         datasets.MNIST('./data', train=True, download=True,
