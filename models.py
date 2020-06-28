@@ -32,7 +32,6 @@ class BasicBlock(nn.Module):
         # Both self.conv1 and self.downsample layers downsample the input when stride != 1
         self.conv1 = conv3x3(inplanes, planes, stride)
 
-        self.bn1 = norm_layer(planes)
         self.relu = nn.ReLU(inplace=True)
 
         if norm_layer == "autograd":
@@ -41,13 +40,18 @@ class BasicBlock(nn.Module):
                 nn.ReLU(inplace=True)
             )
         else:
-            self.abn1 == nn.Sequential(
+            self.abn1 = nn.Sequential(
                 nn.BatchNorm2d(planes),
                 nn.ReLU(inplace=True)
             )
 
         self.conv2 = conv3x3(planes, planes)
-        self.bn2 = norm_layer(planes)
+
+        if norm_layer == "autograd":
+            self.bn2 = BatchNormAutograd(planes)
+        else:
+            self.bn2 = nn.BatchNorm2d(planes)
+
         self.downsample = downsample
         self.stride = stride
 
@@ -55,8 +59,7 @@ class BasicBlock(nn.Module):
         identity = x
 
         out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.relu(out)
+        out = self.abn1(out)
 
         out = self.conv2(out)
         out = self.bn2(out)

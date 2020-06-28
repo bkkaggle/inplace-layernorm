@@ -44,6 +44,8 @@ def main():
     model = ResNet(Bottleneck, [3, 4, 6, 3],
                    num_classes=10, norm_layer=args.abn_type).to(device)
 
+    wandb.watch(model, log='all', log_freq=10)
+
     train_dataloader = torch.utils.data.DataLoader(
         datasets.MNIST('./data', train=True, download=True,
                        transform=transforms.Compose([
@@ -65,6 +67,7 @@ def main():
 
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-2)
 
+    global_step = 0
     for epoch in range(0, args.epochs):
         train_loss = 0
         val_loss = 0
@@ -86,8 +89,13 @@ def main():
 
             train_loss += loss.item()
 
+            if i % 10 == 0:
+                wandb.log({'loss': loss.item()}, step=global_step)
+
             if args.fast and i > 10:
                 break
+
+            global_step += 1
 
         correct = 0
 
@@ -108,9 +116,12 @@ def main():
 
         train_loss /= (i + 1)
         val_loss /= (j + 1)
+        val_acc = correct / len(test_dataloader.dataset)
 
         print(
-            f"loss: {train_loss}, val_loss: {val_loss}, val_acc: {correct / len(test_dataloader.dataset)}")
+            f"loss: {train_loss}, val_loss: {val_loss}, val_acc: {val_acc}")
+        wandb.log({"train_loss": train_loss,
+                   "val_loss": val_loss, "val_acc": val_acc}, step=global_step)
 
 
 if __name__ == "__main__":
