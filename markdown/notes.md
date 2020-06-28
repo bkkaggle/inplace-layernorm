@@ -9,6 +9,7 @@
 
 # Todo
 
+-   use resnet 50
 -   make checkpointing version
     -   checkpointing version isn't saving any memory
 -   make inplace abn
@@ -25,3 +26,8 @@
 -   prob can make autograd.fn bn more efficient by removing something from the cache
 -   autograd.fn version implemented properly is almost equivalent to pt version
 -   the reason why the checkpointed inplace abn is more memory optimized is because the outputs of the bn aren't cached
+-   resnet identity blocks have bn after conv but relu after add.
+    -   inplace abn does the same, setting activation to identity for these two modules
+        -   https://github.com/mapillary/inplace_abn/blob/master/scripts/modules/residual.py#L67
+    -   wideresnet might not have this problem
+        -   looks like it doesn't, but will stick with resnet unless something goes wrong

@@ -41,14 +41,8 @@ def main():
     device = torch.device(
         "cuda:0" if torch.cuda.is_available() else "cpu")
 
-    if args.abn_type == 'pt':
-        abn = nn.BatchNorm2d
-
-    elif args.abn_type == 'autograd':
-        abn = BatchNormAutograd
-
-    model = ResNet(BasicBlock, [2, 2, 2, 2],
-                   num_classes=10, norm_layer=abn).to(device)
+    model = ResNet(Bottleneck, [3, 4, 6, 3],
+                   num_classes=10, norm_layer=args.abn_type).to(device)
 
     train_dataloader = torch.utils.data.DataLoader(
         datasets.MNIST('./data', train=True, download=True,
