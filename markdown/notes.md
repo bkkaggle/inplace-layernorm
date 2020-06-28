@@ -23,3 +23,5 @@
 -   make `autograd.function` relu
 -   combine to make activated batchnorm
 -   prob can make autograd.fn bn more efficient by removing something from the cache
+-   autograd.fn checkpointing version isnt any more efficient
+    -   probably because you still need to save inputs for backwards pass

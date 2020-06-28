@@ -152,8 +152,81 @@ class BatchNormAutograd(nn.Module):
 
         return out
 
+# from: http://cthorey.github.io./backpropagation/
+
+
+class BatchNormFN2(torch.autograd.Function):
+
+    @staticmethod
+    def forward(ctx, x, gamma, beta):
+
+        mu = x.mean(dim=(0, 2, 3), keepdim=True)
+        var = ((x - mu) ** 2).mean(dim=(0, 2, 3), keepdim=True)
+
+        xhat = (x - mu) / torch.sqrt(var + 1e-5)
+
+        out = gamma * xhat + beta
+
+        ctx.save_for_backward(x, gamma)
+
+        return out
+
+    @staticmethod
+    def backward(ctx, dout):
+        x, gamma = ctx.saved_tensors
+        dx = dgamma = dbeta = None
+        N = dout.shape[0] * dout.shape[2] * dout.shape[3]
+
+        dbeta = dout.sum(dim=(0, 2, 3), keepdim=True)
+
+        mu = x.mean(dim=(0, 2, 3), keepdim=True)
+        var = ((x - mu) ** 2).mean(dim=(0, 2, 3), keepdim=True)
+
+        dgamma = torch.sum(((x - mu) / torch.sqrt(var + 1e-5))
+                           * dout, dim=(0, 2, 3), keepdim=True)
+
+        dx = (1.0 / N) * gamma * (1.0 / torch.sqrt(var + 1e-5)) * (N * dout - torch.sum(dout, dim=(0, 2, 3),
+                                                                                        keepdim=True) - ((x - mu) * ((var + 1e-5) ** -1.0) * torch.sum(dout * (x - mu), dim=(0, 2, 3), keepdim=True)))
+
+        return dx, dgamma, dbeta
+
+
+class BatchNormAutograd2(nn.Module):
+    def __init__(self, num_features):
+        super(BatchNormAutograd2, self).__init__()
+
+        shape = (1, num_features, 1, 1)
+
+        self.gamma = nn.Parameter(torch.ones(shape))
+        self.beta = nn.Parameter(torch.zeros(shape))
+
+        device = torch.device(
+            "cuda:0" if torch.cuda.is_available() else "cpu")
+
+        self.moving_mean = torch.zeros(shape, device=device)
+        self.moving_var = torch.zeros(shape, device=device)
+
+    def forward(self, x):
+        if not torch.is_grad_enabled():
+            out = (x - self.moving_mean) / torch.sqrt(self.moving_var + 1e-5)
+            out = self.gamma * out + self.beta
+
+        else:
+
+            out = BatchNormFN2.apply(x, self.gamma, self.beta)
+
+            with torch.no_grad():
+                mean = x.mean(dim=(0, 2, 3), keepdim=True)
+                var = ((x - mean) ** 2).mean(dim=(0, 2, 3), keepdim=True)
+
+                self.moving_mean = 0.9 * self.moving_mean + (1 - 0.9) * mean
+                self.moving_var = 0.9 * self.moving_var + (1 - 0.9) * var
+
+        return out
 
 # from https://pytorch.org/tutorials/beginner/examples_autograd/two_layer_net_custom_function.html
+
+
 class MyReLU(torch.autograd.Function):
 
     @staticmethod

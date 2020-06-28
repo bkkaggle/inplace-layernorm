@@ -51,6 +51,9 @@ def main():
         elif args.abn_type == 'autograd':
             abn = BatchNormAutograd
 
+        elif args.abn_type == 'autograd2':
+            abn = BatchNormAutograd2
+
         elif args.abn_type == 'checkpoint':
             abn = CheckpointBN
 
