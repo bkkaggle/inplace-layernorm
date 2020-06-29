@@ -98,6 +98,8 @@ class Bottleneck(nn.Module):
             )
         elif norm_layer == "abn":
             self.abn1 = ActivatedBatchNormAutograd(width)
+        elif norm_layer == "checkpoint":
+            self.abn1 = CheckpointABNAutograd(width)
         else:
             self.abn1 = nn.Sequential(
                 nn.BatchNorm2d(width),
@@ -115,6 +117,8 @@ class Bottleneck(nn.Module):
             )
         elif norm_layer == "abn":
             self.abn2 = ActivatedBatchNormAutograd(width)
+        elif norm_layer == "checkpoint":
+            self.abn2 = CheckpointABNAutograd(width)
         else:
             self.abn2 = nn.Sequential(
                 nn.BatchNorm2d(width),
@@ -131,6 +135,9 @@ class Bottleneck(nn.Module):
             )
         elif norm_layer == "abn":
             self.abn3 = BatchNormAutograd(planes * self.expansion)
+
+        elif norm_layer == "checkpoint":
+            self.abn3 = CheckpointABNAutograd(planes * self.expansion)
 
         else:
             self.abn3 = nn.Sequential(
@@ -422,6 +429,89 @@ class ActivatedBatchNormAutograd(nn.Module):
         else:
 
             out = ActivatedBatchNormFN.apply(x, self.gamma, self.beta)
+
+            with torch.no_grad():
+                mean = x.mean(dim=(0, 2, 3), keepdim=True)
+                var = ((x - mean) ** 2).mean(dim=(0, 2, 3), keepdim=True)
+
+                self.moving_mean = 0.9 * self.moving_mean + (1 - 0.9) * mean
+                self.moving_var = 0.9 * self.moving_var + (1 - 0.9) * var
+
+        return out
+
+
+class CheckpointABNFN(torch.autograd.Function):
+    # from: http://cthorey.github.io./backpropagation/
+
+    @staticmethod
+    def forward(ctx, x, gamma, beta):
+
+        mu = x.mean(dim=(0, 2, 3), keepdim=True)
+        var = ((x - mu) ** 2).mean(dim=(0, 2, 3), keepdim=True)
+
+        xhat = (x - mu) / torch.sqrt(var + 1e-5)
+
+        bn_out = gamma * xhat + beta
+
+        out = bn_out.clamp(min=0)
+
+        # ctx.save_for_backward(x, gamma, bn_out)
+        ctx.save_for_backward(x, gamma, beta)
+
+        return out
+
+    @staticmethod
+    def backward(ctx, dout):
+        # x, gamma, bn_out = ctx.saved_tensors
+        x, gamma, beta = ctx.saved_tensors
+        dx = dgamma = dbeta = None
+
+        mu = x.mean(dim=(0, 2, 3), keepdim=True)
+        var = ((x - mu) ** 2).mean(dim=(0, 2, 3), keepdim=True)
+
+        xhat = (x - mu) / torch.sqrt(var + 1e-5)
+
+        bn_out = gamma * xhat + beta
+
+        dout = dout * (bn_out > 0)
+
+        N = dout.shape[0] * dout.shape[2] * dout.shape[3]
+
+        dbeta = dout.sum(dim=(0, 2, 3), keepdim=True)
+
+        dgamma = torch.sum(((x - mu) / torch.sqrt(var + 1e-5))
+                           * dout, dim=(0, 2, 3), keepdim=True)
+
+        dx = (1.0 / N) * gamma * (1.0 / torch.sqrt(var + 1e-5)) * (N * dout - torch.sum(dout, dim=(0, 2, 3),
+                                                                                        keepdim=True) - ((x - mu) * ((var + 1e-5) ** -1.0) * torch.sum(dout * (x - mu), dim=(0, 2, 3), keepdim=True)))
+
+        return dx, dgamma, dbeta
+
+
+class CheckpointABNAutograd(nn.Module):
+    def __init__(self, num_features):
+        super(CheckpointABNAutograd, self).__init__()
+
+        shape = (1, num_features, 1, 1)
+
+        self.gamma = nn.Parameter(torch.ones(shape))
+        self.beta = nn.Parameter(torch.zeros(shape))
+
+        device = torch.device(
+            "cuda:0" if torch.cuda.is_available() else "cpu")
+
+        self.moving_mean = torch.zeros(shape, device=device)
+        self.moving_var = torch.zeros(shape, device=device)
+
+    def forward(self, x):
+        if not torch.is_grad_enabled():
+            out = (x - self.moving_mean) / torch.sqrt(self.moving_var + 1e-5)
+            out = self.gamma * out + self.beta
+            out = out.clamp(min=0)
+
+        else:
+
+            out = CheckpointABNFN.apply(x, self.gamma, self.beta)
 
             with torch.no_grad():
                 mean = x.mean(dim=(0, 2, 3), keepdim=True)
