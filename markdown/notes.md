@@ -6,6 +6,8 @@
 -   layernorm: https://qywu.github.io/2019/05/22/explore-gradient-checkpointing.html
 -   inplace abn: https://github.com/mapillary/inplace_abn
 -   bn mean over axis: https://forums.fast.ai/t/batchnormalization-axis-1-when-used-on-convolutional-layers/214/12
+-   checkpoint abn is only about as efficient as the pt version
+-   inplace abn is pretty complicated
 
 # Todo
 

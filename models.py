@@ -455,7 +455,6 @@ class CheckpointABNFN(torch.autograd.Function):
 
         out = bn_out.clamp(min=0)
 
-        # ctx.save_for_backward(x, gamma, bn_out)
         ctx.save_for_backward(x, gamma, beta)
 
         return out
