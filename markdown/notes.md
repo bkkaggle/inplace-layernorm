@@ -9,9 +9,8 @@
 
 # Todo
 
--   use resnet 50
--   make checkpointing version
-    -   checkpointing version isn't saving any memory
+-   make abn
+-   make checkpointing abn
 -   make inplace abn
 
 -   invertible autograd.function GeLU
@@ -31,3 +30,4 @@
         -   https://github.com/mapillary/inplace_abn/blob/master/scripts/modules/residual.py#L67
     -   wideresnet might not have this problem
         -   looks like it doesn't, but will stick with resnet unless something goes wrong
+-   use resnet 50
